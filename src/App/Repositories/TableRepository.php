@@ -7,23 +7,24 @@ namespace App\Repositories;
 use App\Database;
 use PDO;
 
-class SoinsRepository 
+class TableRepository 
 {
     public function __construct(private Database $database)
     {
 
     }
-    public function getAll(): array 
+    public function getAll($table): array 
     {
         $pdo = $this->database->getConnection();
 
-        $req = $pdo->query('SELECT * FROM soins');
+        $req = $pdo->query('SELECT * FROM ' . $table);
 
         return $req->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getById(int $id): array|bool {
-        $sql = 'SELECT * FROM soins WHERE id = :id';
+    public function getById(int $id, $table): array|bool {
+        // $sql = "SELECT * FROM $table WHERE id = :id";
+        $sql = 'SELECT * FROM ' . $table . ' WHERE id = :id';
 
         $pdo = $this->database->getConnection();
 

@@ -9,30 +9,32 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
 use Slim\Routing\RouteContext;
-use App\Repositories\SoinsRepository;
+use App\Repositories\TableRepository;
 use Slim\Exception\HttpNotFoundException;
 
-class GetSoin
+class GetTable
 {
-    public function __construct(private SoinsRepository $repository)
+    public function __construct(private TableRepository $repository)
     {
-
     }
+    
+    //Permet de gérer les erreurs http
     public function __invoke(Request $request, RequestHandler $handler): Response
     {
         $context = RouteContext::fromRequest($request);
 
         $route = $context->getRoute();
 
+        $table = $route->getArgument('table');
         $id = $route->getArgument('id');
 
-        $soin = $this->repository->getById((int) $id);
+        $obj = $this->repository->getById((int) $id, $table);
 
-        if ($soin === false) {
-            throw new HttpNotFoundException($request, message: 'Soin introuvable.');
+        if ($obj === false) {
+            throw new HttpNotFoundException($request, message: 'Objet ' . $table . ' introuvable.');
         }
 
-        $request = $request->withAttribute('soin', $soin);
+        $request = $request->withAttribute($table, $obj);
 
         return $handler->handle($request);
     }

@@ -35,28 +35,28 @@ $errorHandler->forceContentType('application/json');
 
 $app->add(new AddJsonResponseHeader);
 
-$app->get('/soins', function (Request $request, Response $response) {
-
-    $repository = $this->get(App\Repositories\SoinsRepository::class);
-
-    $data = $repository->getAll();
-
-    $body = json_encode($data);
+$app->get('/{table}', function (Request $request, Response $response, string $table) {
     
-    $response->getBody()->write($body);
+    $repository = $this->get(App\Repositories\TableRepository::class);
+
+    $data = $repository->getAll($table);
+
+    $tableJson = json_encode($data);
+    
+    $response->getBody()->write($tableJson);
 
     return $response;
 });
 
-$app->get('/soins/{id:[0-9]+}', function (Request $request, Response $response, string $id) {
-
-    $soin = $request->getAttribute('soin');
-
-    $soinJson = json_encode($soin);
+$app->get('/{table}/{id:[0-9]+}', function (Request $request, Response $response, string $table, string $id) {
     
-    $response->getBody()->write($soinJson);
+    $obj = $request->getAttribute($table);
+
+    $objJson = json_encode($obj);
+    
+    $response->getBody()->write($objJson);
 
     return $response;
-})->add(App\Middleware\GetSoin::class);
+})->add(App\Middleware\GetTable::class);
 
 $app->run();
