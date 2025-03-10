@@ -7,6 +7,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
 use DI\ContainerBuilder;
 use Slim\Handlers\Strategies\RequestResponseArgs;
+use App\Middleware\AddJsonResponseHeader;
 
 define('APP_ROOT', dirname(__DIR__));
 
@@ -26,6 +27,14 @@ $collector = $app->getRouteCollector();
 
 $collector->setDefaultInvocationStrategy(new RequestResponseArgs);
 
+$errorMiddleware = $app->addErrorMiddleware(true, true, true);
+
+$errorHandler = $errorMiddleware->getDefaultErrorHandler();
+
+$errorHandler->forceContentType('application/json');
+
+$app->add(new AddJsonResponseHeader);
+
 $app->get('/soins', function (Request $request, Response $response) {
 
     $repository = $this->get(App\Repositories\SoinsRepository::class);
@@ -36,24 +45,18 @@ $app->get('/soins', function (Request $request, Response $response) {
     
     $response->getBody()->write($body);
 
-    return $response->withHeader('Content-Type', 'application/json');
+    return $response;
 });
 
 $app->get('/soins/{id:[0-9]+}', function (Request $request, Response $response, string $id) {
 
-    $repository = $this->get(App\Repositories\SoinsRepository::class);
-
-    $soin = $repository->getById((int) $id);
-
-    if ($soin === false) {
-        throw new \Slim\Exception\HttpNotFoundException($request, message: 'Soin introuvable.');
-    }
+    $soin = $request->getAttribute('soin');
 
     $soinJson = json_encode($soin);
     
     $response->getBody()->write($soinJson);
 
-    return $response->withHeader('Content-type', 'application/json');
-});
+    return $response;
+})->add(App\Middleware\GetSoin::class);
 
 $app->run();
