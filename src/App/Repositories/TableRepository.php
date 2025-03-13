@@ -22,8 +22,8 @@ class TableRepository
         return $req->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getById(int $id, $table): array|bool {
-        // $sql = "SELECT * FROM $table WHERE id = :id";
+    public function getById(int $id, $table): array|bool 
+    {
         $sql = 'SELECT * FROM ' . $table . ' WHERE id = :id';
 
         $pdo = $this->database->getConnection();
@@ -35,5 +35,14 @@ class TableRepository
         $req->execute();
 
         return $req->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function update(int $id, array $params, $table)
+    {
+        $sql = 'UPDATE ' . $table . ' SET ' . $param . ' = :' . $param . ' WHERE ' . $id . ' = :id';
+
+        $pdo = $this->database->getConnection();
+
+        $req = $pdo->prepare($sql);
     }
 }
