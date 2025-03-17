@@ -12,4 +12,4 @@ composer require php-di/php-di
 php -S localhost:8080 C:\wamp64\www\API_v2\public\index.php
 
 # Run httpie
-http get http://localhost:8080/
+http get(put, delete...) http://localhost:8080/(table, paramètres...)
