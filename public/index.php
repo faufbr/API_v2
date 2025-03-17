@@ -123,6 +123,42 @@ $app->delete('/{table}/{id:[0-9]+}', function (Request $request, Response $respo
 
 })->add(App\Middleware\GetTable::class);
 
+$app->post('/{table}', function (Request $request, Response $response, string $table) {
+    
+    $params = $request->getParsedBody();
+
+    if (empty($params)) {
+        $msgErreur = json_encode(["erreur" => "0 paramètre fourni"]);
+        $response->getBody()->write($msgErreur);
+        $vreponse = $response->withStatus(400);
+    }
+    else {
+        try {
+            $repository = $this->get(App\Repositories\TableRepository::class);
+            $nouvelId = $repository->create($params, $table);
+    
+            if ($nouvelId === 0) {
+                $msgErreur = json_encode(["erreur" => "Création impossible"]);
+                $response->getBody()->write($msgErreur);
+                $vreponse = $response->withStatus(500);
+            }
+            else {
+                $objCree = $repository->getById($nouvelId, $table);
+                $response->getBody()->write(json_encode($objCree));
+                $vreponse = $response->withStatus(201);
+            }
+        }
+        catch (PDOException $ex) {
+            $msgErreur = json_encode(["erreur" => "Erreur BDD : " . $ex->getMessage()]);
+            $response->getBody()->write($msgErreur);
+            $vreponse = $response->withStatus(500);
+        }  
+    }
+    
+    return $vreponse;
+
+})->add(App\Middleware\GetTable::class);
+
 //Parse les requêtes http en données sous forme de tableau accessible ensuite via getParsedBody()
 $app->addBodyParsingMiddleware();
 

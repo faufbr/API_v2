@@ -73,4 +73,34 @@ class TableRepository
         //Retourne true si au moins une ligne a été supprimée
         return $req->execute() && $req->rowCount() > 0;
     }
+
+    public function create(array $params, $table)
+    {
+        $colonnes = array_keys($params);
+        $array = array_map(fn($key) => ":$key", $colonnes);
+
+        foreach ($params as $key => $value) {
+            $array[] = "$key = :$key";
+        }
+
+        $sql = "INSERT INTO $table (" . implode(', ', $colonnes) . ") VALUES (" . implode(', ', $array) . ")";
+
+        $pdo = $this->database->getConnection();
+
+        $req = $pdo->prepare($sql);
+
+        foreach ($params as $key => $value) {
+            $req->bindValue(":$key", $value);
+        }
+
+        if ($req->execute()) {
+            //Id du dernier insert créé
+            $vretour = (int)$pdo->lastInsertId();
+        }
+        else {
+            $vretour = 0;
+        }
+
+        return $vretour;
+    }
 }
