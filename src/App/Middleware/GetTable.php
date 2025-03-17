@@ -21,7 +21,7 @@ class GetTable
     //Valide l'existence de la table demandée, la récupère et gère les erreurs 404 liées à cette demande
     public function __invoke(Request $request, RequestHandler $handler): Response
     {
-        $tablesNonAutorisees = ['administrateur'];
+        $tablesAutorisees = ['categorie_indisponibilite', 'categ_soins', 'convalescence', 'indisponibilite', 'infirmiere', 'lieu_convalescence', 'patient', 'personne', 'soins', 'soins_visite', 'temoignage', 'type_soins', 'visite'];
 
         $context = RouteContext::fromRequest($request);
 
@@ -30,8 +30,8 @@ class GetTable
         $table = $route->getArgument('table');
         $id = $route->getArgument('id');
 
-        //Pour éviter injections sql
-        if (in_array($table, $tablesNonAutorisees)) {
+        //Pour éviter injections
+        if (!in_array($table, $tablesAutorisees)) {
             throw new HttpNotFoundException($request, 'Opération impossible : table non valide');
         }
 
