@@ -18,15 +18,22 @@ class GetTable
     {
     }
     
-    //Permet de gérer les erreurs http
+    //Valide l'existence de la table demandée, la récupère et gère les erreurs 404 liées à cette demande
     public function __invoke(Request $request, RequestHandler $handler): Response
     {
+        $tablesNonAutorisees = ['administrateur'];
+
         $context = RouteContext::fromRequest($request);
 
         $route = $context->getRoute();
 
         $table = $route->getArgument('table');
         $id = $route->getArgument('id');
+
+        //Pour éviter injections sql
+        if (in_array($table, $tablesNonAutorisees)) {
+            throw new HttpNotFoundException($request, 'Opération impossible : table non valide');
+        }
 
         $obj = $this->repository->getById((int) $id, $table);
 
