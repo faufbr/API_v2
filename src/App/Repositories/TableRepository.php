@@ -24,7 +24,7 @@ class TableRepository
 
     public function getById(int $id, $table): array|bool 
     {
-        $sql = 'SELECT * FROM ' . $table . ' WHERE id = :id';
+        $sql = "SELECT * FROM $table WHERE id = :id";
 
         $pdo = $this->database->getConnection();
 
@@ -37,7 +37,7 @@ class TableRepository
         return $req->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function update(int $id, array $params, $table)
+    public function update(int $id, array $params, $table): bool
     {
         $array = [];
 
@@ -49,14 +49,28 @@ class TableRepository
 
         $pdo = $this->database->getConnection();
 
-        $sql = $pdo->prepare($sql);
+        $req = $pdo->prepare($sql);
 
         foreach ($params as $key => $value) {
-            $sql->bindValue(":$key", $value);
+            $req->bindValue(":$key", $value);
         }
 
-        $sql->bindValue(':id', $id, PDO::PARAM_INT);
+        $req->bindValue(':id', $id, PDO::PARAM_INT);
 
-        return $sql->execute();
+        return $req->execute();
+    }
+
+    public function delete(int $id, $table): bool
+    {
+        $sql = "DELETE FROM $table WHERE id = :id";
+
+        $pdo = $this->database->getConnection();
+
+        $req = $pdo->prepare($sql);
+
+        $req->bindValue(':id', $id, PDO::PARAM_INT);
+
+        //Retourne true si au moins une ligne a été supprimée
+        return $req->execute() && $req->rowCount() > 0;
     }
 }

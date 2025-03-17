@@ -67,7 +67,7 @@ $app->put('/{table}/{id:[0-9]+}', function (Request $request, Response $response
     $repository = $this->get(App\Repositories\TableRepository::class);
 
     if (empty($params)) {
-        $msgErreur = json_encode(["error" => "0 paramètre fourni"]);
+        $msgErreur = json_encode(["erreur" => "0 paramètre fourni"]);
         $response->getBody()->write($msgErreur);
         $vreponse = $response->withStatus(400);
     }
@@ -76,7 +76,7 @@ $app->put('/{table}/{id:[0-9]+}', function (Request $request, Response $response
             $reussi = $repository->update((int)$id, $params, $table);
     
             if (!$reussi) {
-                $msgErreur = json_encode(["error" => "Mise à jour impossible"]);
+                $msgErreur = json_encode(["erreur" => "Mise à jour impossible"]);
                 $response->getBody()->write($msgErreur);
                 $vreponse = $response->withStatus(404);
             }
@@ -87,12 +87,38 @@ $app->put('/{table}/{id:[0-9]+}', function (Request $request, Response $response
             }
         }
         catch (PDOException $ex) {
-            $msgErreur = json_encode(["error" => "Erreur BDD : " . $ex->getMessage()]);
+            $msgErreur = json_encode(["erreur" => "Erreur BDD : " . $ex->getMessage()]);
             $response->getBody()->write($msgErreur);
             $vreponse = $response->withStatus(500);
         }  
     }
     
+    return $vreponse;
+
+})->add(App\Middleware\GetTable::class);
+
+$app->delete('/{table}/{id:[0-9]+}', function (Request $request, Response $response, string $table, string $id) {
+    
+    $repository = $this->get(App\Repositories\TableRepository::class);
+
+    try {
+        $reussi = $repository->delete((int)$id, $table);
+
+        if(!$reussi) {
+            $msgErreur = json_encode(["erreur" => "Suppression impossible"]);
+            $response->getBody()->write($msgErreur);
+            $vreponse = $response->withStatus(404);
+        }
+        else {
+            $vreponse = $response->withStatus(204);
+        }
+    }
+    catch(PDOException $ex) {
+        $msgErreur = json_encode(["erreur" => "Erreur BDD : " . $ex->getMessage()]);
+        $response->getBody()->write($msgErreur);
+        $vreponse = $response->withStatus(500);
+    }
+
     return $vreponse;
 
 })->add(App\Middleware\GetTable::class);
