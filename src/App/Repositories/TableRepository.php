@@ -39,22 +39,12 @@ class TableRepository
 
     public function update(int $id, array $params, $table)
     {
-        // $sql = "UPDATE $table SET ";
-        // foreach($params as $key => $value) 
-        // { 
-        //     $sql .= $key . " = :" . $key . " WHERE " . $id . " = :id";
-        // }
-
-        // $pdo = $this->database->getConnection();
-
-        // $req = $pdo->prepare($sql);
-
         $array = [];
 
         foreach ($params as $key => $value) {
             $array[] = "$key = :$key";
         }
-        
+
         $sql = "UPDATE $table SET " . implode(', ', $array) . " WHERE id = :id";
 
         $pdo = $this->database->getConnection();
