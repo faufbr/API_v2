@@ -77,13 +77,9 @@ class TableRepository
     public function create(array $params, $table)
     {
         $colonnes = array_keys($params);
-        $array = array_map(fn($key) => ":$key", $colonnes);
+        $nomcolonnes = array_map(fn($key) => ":$key", $colonnes);
 
-        foreach ($params as $key => $value) {
-            $array[] = "$key = :$key";
-        }
-
-        $sql = "INSERT INTO $table (" . implode(', ', $colonnes) . ") VALUES (" . implode(', ', $array) . ")";
+        $sql = "INSERT INTO $table (" . implode(', ', $colonnes) . ") VALUES (" . implode(', ', $nomcolonnes) . ")";
 
         $pdo = $this->database->getConnection();
 
@@ -92,6 +88,10 @@ class TableRepository
         foreach ($params as $key => $value) {
             $req->bindValue(":$key", $value);
         }
+
+        error_log("SQL: " . $sql);
+        error_log("Params: " . print_r($params, true));
+
 
         if ($req->execute()) {
             //Id du dernier insert créé

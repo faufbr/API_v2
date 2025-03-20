@@ -28,20 +28,24 @@ class GetTable
         $route = $context->getRoute();
 
         $table = $route->getArgument('table');
-        $id = $route->getArgument('id');
 
         //Pour éviter injections
         if (!in_array($table, $tablesAutorisees)) {
             throw new HttpNotFoundException($request, 'Opération impossible : table non valide');
         }
 
-        $obj = $this->repository->getById((int) $id, $table);
+        if ($request->getMethod() !== 'POST') {
 
-        if ($obj === false) {
-            throw new HttpNotFoundException($request, message: 'Objet ' . $table . ' introuvable.');
+            $id = $route->getArgument('id');
+
+            $obj = $this->repository->getById((int) $id, $table);
+
+            if ($obj === false) {
+                throw new HttpNotFoundException($request, message: 'Element ' . $table . ' introuvable.');
+            }
+    
+            $request = $request->withAttribute($table, $obj);
         }
-
-        $request = $request->withAttribute($table, $obj);
 
         return $handler->handle($request);
     }
