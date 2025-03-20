@@ -123,6 +123,42 @@ $app->delete('/{table}/{id:[0-9]+}', function (Request $request, Response $respo
 
 })->add(App\Middleware\GetTable::class);
 
+$app->post('/login', function (Request $request, Response $response) {
+    
+    $params = $request->getParsedBody();
+
+    if (empty($params)) {
+        $msgErreur = json_encode(["erreur" => "0 paramètre fourni"]);
+        $response->getBody()->write($msgErreur);
+        $vreponse = $response->withStatus(400);
+    }
+    else {
+        $repository = $this->get(App\Repositories\TableRepository::class);
+
+        try {
+            $user = $repository->login($params);
+            
+            if ($user === false) {
+                $msgErreur = json_encode(["erreur" => "Login ou mot de passe incorrect"]);
+                $response->getBody()->write($msgErreur);
+                $vreponse = $response->withStatus(401);
+            }
+            else {
+                $response->getBody()->write(json_encode($user));
+                $vreponse = $response->withStatus(200);
+            }
+        }
+        catch (PDOException $ex) {
+            $msgErreur = json_encode(["erreur" => "Erreur BDD : " . $ex->getMessage()]);
+            $response->getBody()->write($msgErreur);
+            $vreponse = $response->withStatus(500);
+        }
+        
+    }
+    
+    return $vreponse;
+})->add(App\Middleware\GetTable::class);
+
 $app->post('/{table}', function (Request $request, Response $response, string $table) {
     
     $params = $request->getParsedBody();
