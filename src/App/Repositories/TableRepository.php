@@ -89,10 +89,6 @@ class TableRepository
             $req->bindValue(":$key", $value);
         }
 
-        error_log("SQL: " . $sql);
-        error_log("Params: " . print_r($params, true));
-
-
         if ($req->execute()) {
             //Id du dernier insert créé
             $vretour = (int)$pdo->lastInsertId();
