@@ -21,6 +21,8 @@ class GetTable
     //Valide l'existence de la table demandée, la récupère et gère les erreurs 404 liées à cette demande
     public function __invoke(Request $request, RequestHandler $handler): Response
     {
+        error_log("Middleware GetTable exécuté");
+
         $routeuri = $request->getUri()->getPath();
 
         if ($routeuri === '/login') {
@@ -52,6 +54,7 @@ class GetTable
     
             $request = $request->withAttribute($table, $obj);
         }
+        error_log("Middleware GetTable terminé");
 
         return $handler->handle($request);
     }

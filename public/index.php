@@ -8,6 +8,8 @@ use Psr\Http\Message\ResponseInterface as Response;
 use DI\ContainerBuilder;
 use Slim\Handlers\Strategies\RequestResponseArgs;
 use App\Middleware\AddJsonResponseHeader;
+use App\Repositories\TableRepository;
+use App\Middleware\VerifyTokenMiddleware;
 
 define('APP_ROOT', dirname(__DIR__));
 
@@ -20,7 +22,13 @@ $container = $builder->addDefinitions(APP_ROOT . '/config/definitions.php')
 
 AppFactory::setContainer($container);
 
-require APP_ROOT . '/src/App/Container/ContainerToken.php';
+// Slim utilise le conteneur d'injection de dépendances (DI) pour instancier la classe
+$container->set(VerifyTokenMiddleware::class, function ($container) {
+    $repository = $container->get(TableRepository::class); // Récupère TableRepository depuis le conteneur
+    return new VerifyTokenMiddleware($repository);
+});
+
+// require APP_ROOT . '/src/App/Container/ContainerToken.php';
 
 $app = AppFactory::create();
 
@@ -49,7 +57,7 @@ $app->get('/{table}', function (Request $request, Response $response, string $ta
     $response->getBody()->write($tableJson);
 
     return $response;
-});
+})->add(App\Middleware\VerifyTokenMiddleware::class);
 
 $app->get('/{table}/{id:[0-9]+}', function (Request $request, Response $response, string $table, string $id) {
     
@@ -60,8 +68,8 @@ $app->get('/{table}/{id:[0-9]+}', function (Request $request, Response $response
     $response->getBody()->write($objJson);
 
     return $response;
-})->add(App\Middleware\GetTable::class)
-->add(App\Middleware\VerifyTokenMiddleware::class);
+})->add(App\Middleware\VerifyTokenMiddleware::class)
+->add(App\Middleware\GetTable::class);
 
 $app->put('/{table}/{id:[0-9]+}', function (Request $request, Response $response, string $table, string $id) {
     
@@ -98,8 +106,8 @@ $app->put('/{table}/{id:[0-9]+}', function (Request $request, Response $response
     
     return $vreponse;
 
-})->add(App\Middleware\GetTable::class)
-->add(App\Middleware\VerifyTokenMiddleware::class);
+})->add(App\Middleware\VerifyTokenMiddleware::class)
+->add(App\Middleware\GetTable::class);
 
 $app->delete('/{table}/{id:[0-9]+}', function (Request $request, Response $response, string $table, string $id) {
     
@@ -125,8 +133,8 @@ $app->delete('/{table}/{id:[0-9]+}', function (Request $request, Response $respo
 
     return $vreponse;
 
-})->add(App\Middleware\GetTable::class)
-->add(App\Middleware\VerifyTokenMiddleware::class);
+})->add(App\Middleware\VerifyTokenMiddleware::class)
+->add(App\Middleware\GetTable::class);
 
 $app->post('/login', function (Request $request, Response $response) {
     
@@ -198,8 +206,8 @@ $app->post('/{table}', function (Request $request, Response $response, string $t
     
     return $vreponse;
 
-})->add(App\Middleware\GetTable::class)
-->add(App\Middleware\VerifyTokenMiddleware::class);
+})->add(App\Middleware\VerifyTokenMiddleware::class)
+->add(App\Middleware\GetTable::class);
 
 //Parse les requêtes http en données sous forme de tableau accessible ensuite via getParsedBody()
 $app->addBodyParsingMiddleware();

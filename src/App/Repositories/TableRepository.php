@@ -164,7 +164,7 @@ class TableRepository
     public function createToken(int $idLogin) 
     {
         $header = base64_encode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
-        $payload = base64_encode(json_encode(['id' => $idLogin, 'exp' => (time() + 30)]));
+        $payload = base64_encode(json_encode(['id' => $idLogin, 'exp' => (time() + 60)]));
         $signature = base64_encode(hash_hmac('sha256', "$header.$payload", 'ffabre', true));
         $token = "$header.$payload.$signature";
 
@@ -186,21 +186,27 @@ class TableRepository
 
     public function verifyToken(string $jwt)
     {
-        [$header, $payload, $signature] = explode('.', $jwt);
+        try {
+            [$header, $payload, $signature] = explode('.', $jwt);
 
-        $signatureValide = base64_encode(hash_hmac('sha256', "$header.$payload", 'ffabre', true));
+            $signatureValide = base64_encode(hash_hmac('sha256', "$header.$payload", 'ffabre', true));
 
-        if ($signature !== $signatureValide) {
-            $vretour = false;
-        }
-        else {
-            $payloadDechiffre = json_decode(base64_decode($payload), true);
-            if ($payloadDechiffre['exp'] < time()) {
+            if ($signature !== $signatureValide) {
                 $vretour = false;
             }
             else {
-                $vretour = $payloadDechiffre;
+                $payloadDechiffre = json_decode(base64_decode($payload), true);
+                if ($payloadDechiffre['exp'] < time()) {
+                    $vretour = false;
+                }
+                else {
+                    $vretour = $payloadDechiffre;
+                }
             }
+        }
+        catch(\Exception $ex) {
+            error_log("Erreur lors de la vérification du token : " . $ex->getMessage());
+            $vretour = false;
         }
 
         return $vretour;
