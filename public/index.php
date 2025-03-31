@@ -20,6 +20,8 @@ $container = $builder->addDefinitions(APP_ROOT . '/config/definitions.php')
 
 AppFactory::setContainer($container);
 
+require APP_ROOT . '/src/App/Container/ContainerToken.php';
+
 $app = AppFactory::create();
 
 //Permet de transformer l'argument de l'url (ex: '/soins/2') directement en variable dans le get
@@ -58,7 +60,8 @@ $app->get('/{table}/{id:[0-9]+}', function (Request $request, Response $response
     $response->getBody()->write($objJson);
 
     return $response;
-})->add(App\Middleware\GetTable::class);
+})->add(App\Middleware\GetTable::class)
+->add(App\Middleware\VerifyTokenMiddleware::class);
 
 $app->put('/{table}/{id:[0-9]+}', function (Request $request, Response $response, string $table, string $id) {
     
@@ -95,7 +98,8 @@ $app->put('/{table}/{id:[0-9]+}', function (Request $request, Response $response
     
     return $vreponse;
 
-})->add(App\Middleware\GetTable::class);
+})->add(App\Middleware\GetTable::class)
+->add(App\Middleware\VerifyTokenMiddleware::class);
 
 $app->delete('/{table}/{id:[0-9]+}', function (Request $request, Response $response, string $table, string $id) {
     
@@ -121,7 +125,8 @@ $app->delete('/{table}/{id:[0-9]+}', function (Request $request, Response $respo
 
     return $vreponse;
 
-})->add(App\Middleware\GetTable::class);
+})->add(App\Middleware\GetTable::class)
+->add(App\Middleware\VerifyTokenMiddleware::class);
 
 $app->post('/login', function (Request $request, Response $response) {
     
@@ -193,7 +198,8 @@ $app->post('/{table}', function (Request $request, Response $response, string $t
     
     return $vreponse;
 
-})->add(App\Middleware\GetTable::class);
+})->add(App\Middleware\GetTable::class)
+->add(App\Middleware\VerifyTokenMiddleware::class);
 
 //Parse les requêtes http en données sous forme de tableau accessible ensuite via getParsedBody()
 $app->addBodyParsingMiddleware();

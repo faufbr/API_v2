@@ -133,6 +133,8 @@ class TableRepository
                 $req->bindValue(':id', $user['id'], PDO::PARAM_INT);
 
                 $req->execute();
+
+                $this->createToken($user['id']);
                 
                 $vretour = $user;
             }
@@ -153,6 +155,51 @@ class TableRepository
 
                     $vretour = ['error' => 'Utilisateur ou mot de passe incorrect'];
                 }
+            }
+        }
+
+        return $vretour;
+    }
+
+    public function createToken(int $idLogin) 
+    {
+        $header = base64_encode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
+        $payload = base64_encode(json_encode(['id' => $idLogin, 'exp' => (time() + 30)]));
+        $signature = base64_encode(hash_hmac('sha256', "$header.$payload", 'ffabre', true));
+        $token = "$header.$payload.$signature";
+
+        $sql = "INSERT INTO token (id_login, date, jeton) VALUES (:id_login, NOW(), :token)";
+
+        $pdo = $this->database->getConnection();
+
+        $req = $pdo->prepare($sql);
+
+        $req->bindValue(':id_login', $idLogin, PDO::PARAM_INT);
+        $req->bindValue(':token', $token, PDO::PARAM_STR);
+
+        $req->execute();
+
+        $retourToken = $req->fetch(PDO::FETCH_ASSOC);
+
+        return $retourToken;
+    }
+
+    public function verifyToken(string $jwt)
+    {
+        [$header, $payload, $signature] = explode('.', $jwt);
+
+        $signatureValide = base64_encode(hash_hmac('sha256', "$header.$payload", 'ffabre', true));
+
+        if ($signature !== $signatureValide) {
+            $vretour = false;
+        }
+        else {
+            $payloadDechiffre = json_decode(base64_decode($payload), true);
+            if ($payloadDechiffre['exp'] < time()) {
+                $vretour = false;
+            }
+            else {
+                $vretour = $payloadDechiffre;
             }
         }
 
