@@ -125,7 +125,7 @@ class TableRepository
             $vretour = ['error' => 'Utilisateur ou mot de passe incorrect'];
         }
         else {
-            if (md5($password) === $user['mp']) {
+            if (md5($password) === $user['mp'] && $user['nb_tentative_erreur'] < 3) {
                 unset($user['mp']);
 
                 $sql = "UPDATE personne_login SET derniere_connexion = NOW() WHERE id = :id";
@@ -141,7 +141,22 @@ class TableRepository
                 $vretour = $user;
             }
             else {
-                $vretour = ['error' => 'Utilisateur ou mot de passe incorrect'];
+                if ($user['nb_tentative_erreur'] >= 3) {
+                    $vretour = ['error' => 'Compte bloqué'];
+                }
+                else {
+                    $sql = "UPDATE personne_login SET nb_tentative_erreur = nb_tentative_erreur + 1 WHERE id = :id";
+
+                    $pdo = $this->database->getConnection();
+
+                    $req = $pdo->prepare($sql);
+
+                    $req->bindValue(':id', $user['id'], PDO::PARAM_INT);
+
+                    $req->execute();
+
+                    $vretour = ['error' => 'Utilisateur ou mot de passe incorrect'];
+                }
             }
         }
 
