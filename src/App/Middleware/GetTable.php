@@ -29,7 +29,53 @@ class GetTable
             return $handler->handle($request);
         }
         
-        $tablesAutorisees = ['categorie_indisponibilite', 'categ_soins', 'convalescence', 'indisponibilite', 'infirmiere', 'lieu_convalescence', 'patient', 'personne', 'soins', 'soins_visite', 'temoignage', 'type_soins', 'visite'];
+        $tablesAutorisees = ['chambre_forte', 'badge', 'categorie_indisponibilite', 'categ_soins', 'convalescence', 'indisponibilite', 'infirmiere', 'lieu_convalescence', 'patient', 'personne', 'soins', 'soins_visite', 'temoignage', 'type_soins', 'visite'];
+
+        define('ACCES', [
+            'administrateur' => [
+                'administateur',
+                'badge',
+                'categorie_indisponibilite',
+                'categ_soins',
+                'chambre_forte',
+                'convalescence',
+                'indisponibilite',
+                'infirmiere',
+                'infirmiere_badge',
+                'lieu_convalescence',
+                'patient',
+                'personne',
+                'personne_login',
+                'soins',
+                'soins_visite',
+                'temoignage',
+                'type_soins',
+                'visite',
+            ],
+            'infirmiere' => [
+                'soins',
+                'soins_visite',
+                'categ_soins',
+                'patient',
+                'visite'
+            ],
+            'infirmiere_cheffe' => [
+                'soins',
+                'soins_visite',
+                'categ_soins',
+                'patient',
+                'visite',
+                'infirmiere',
+                'personne',
+                'badge',
+                'convalescence',
+                'type_soins'
+            ],
+            'patient' => [
+                'infirmiere',
+                'visite'
+            ]
+        ]);
 
         $context = RouteContext::fromRequest($request);
 

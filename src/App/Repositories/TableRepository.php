@@ -164,7 +164,7 @@ class TableRepository
     public function createToken(int $idLogin) 
     {
         $header = base64_encode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
-        $payload = base64_encode(json_encode(['id' => $idLogin, 'exp' => (time() + 60)]));
+        $payload = base64_encode(json_encode(['id' => $idLogin, 'function' => , 'exp' => (time() + 60)]));
         $signature = base64_encode(hash_hmac('sha256', "$header.$payload", 'ffabre', true));
         $token = "$header.$payload.$signature";
 
@@ -210,5 +210,32 @@ class TableRepository
         }
 
         return $vretour;
+    }
+
+    // Comparer à quoi ? comment ?
+    public function compareId(int $id)
+    {
+        $sql = "SELECT * FROM $table WHERE id = (SELECT id FROM $table)";
+
+        $pdo = $this->database->getConnection();
+
+        $req = $pdo->prepare($sql);
+
+        $req->bindValue(':id', $id, PDO::PARAM_INT);
+
+        return $req->execute();
+    }
+
+    public function checkCheffe(int $id)
+    {
+        $sql = "SELECT cheffe FROM infirmiere WHERE id = :id";
+
+        $pdo = $this->database->getConnection();
+
+        $req = $pdo->prepare($sql);
+
+        $req->bindValue(':id', $id, PDO::PARAM_INT);
+
+        return $req->execute();
     }
 }
