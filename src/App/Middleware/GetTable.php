@@ -21,17 +21,16 @@ class GetTable
     //Valide l'existence de la table demandée, la récupère et gère les erreurs 404 liées à cette demande
     public function __invoke(Request $request, RequestHandler $handler): Response
     {
-        error_log("Middleware GetTable exécuté");
-
         $routeuri = $request->getUri()->getPath();
 
         if ($routeuri === '/login') {
             return $handler->handle($request);
         }
-        
-        $tablesAutorisees = ['chambre_forte', 'badge', 'categorie_indisponibilite', 'categ_soins', 'convalescence', 'indisponibilite', 'infirmiere', 'lieu_convalescence', 'patient', 'personne', 'soins', 'soins_visite', 'temoignage', 'type_soins', 'visite'];
 
-        define('ACCES', [
+        $token = $request->getAttribute('token');
+        $role = $token['function'] ?? 'patient';
+
+        $acces = [
             'administrateur' => [
                 'administateur',
                 'badge',
@@ -75,7 +74,10 @@ class GetTable
                 'infirmiere',
                 'visite'
             ]
-        ]);
+        ];
+
+        // Attribution de l'accès aux tables en fonction du rôle. S'il y a un rôle qui n'est pas défini dans ACCES, on ne lui donne aucune table à accéder
+        $tablesAutorisees = $acces[$role] ?? [];
 
         $context = RouteContext::fromRequest($request);
 
@@ -83,7 +85,7 @@ class GetTable
 
         $table = $route->getArgument('table');
 
-        //Pour éviter injections
+        // Pour éviter les accès non autorisés
         if (!in_array($table, $tablesAutorisees)) {
             throw new HttpNotFoundException($request, 'Opération impossible : table non valide');
         }
@@ -92,15 +94,16 @@ class GetTable
 
             $id = $route->getArgument('id');
 
-            $obj = $this->repository->getById((int) $id, $table);
-
-            if ($obj === false) {
-                throw new HttpNotFoundException($request, message: 'Element ' . $table . ' introuvable.');
+            if ($id != null)
+            {
+                $obj = $this->repository->getById((int) $id, $table);
+                if ($obj === false) {
+                    throw new HttpNotFoundException($request, message: 'Element ' . $table . ' introuvable.');
+                }
+        
+                $request = $request->withAttribute($table, $obj);
             }
-    
-            $request = $request->withAttribute($table, $obj);
         }
-        error_log("Middleware GetTable terminé");
 
         return $handler->handle($request);
     }

@@ -20,8 +20,6 @@ class VerifyTokenMiddleware
 
     public function __invoke(Request $request, RequestHandler $handler)
     {
-        error_log("Middleware VerifyTokenMiddleware exécuté");
-
         $route = $request->getUri()->getPath();
 
         // Ignorer la vérification du token pour la route /login
@@ -33,7 +31,6 @@ class VerifyTokenMiddleware
 
             // Vérifie si la chaîne commence par Bearer puis une suite de caractères non blancs
             if (!$authorization || !preg_match('/Bearer\s(\S+)/', $authorization[0], $matches)) {
-                error_log("En-tête Authorization manquant ou mal formé");
                 throw new HttpUnauthorizedException($request, 'Token invalide');
             }
             else {
@@ -42,7 +39,6 @@ class VerifyTokenMiddleware
                 
                 try {
                     if (count(explode('.', $jwt)) !== 3) {
-                        error_log("Token JWT mal formé");
                         throw new HttpUnauthorizedException($request, 'Token JWT mal formé');
                     }
                     else {
@@ -52,8 +48,18 @@ class VerifyTokenMiddleware
                             throw new HttpUnauthorizedException($request, 'Token invalide');
                         }
                         else {
-                            error_log("Token valide");
-                            $request = $request->withAttribute('token', $validiteToken);
+                            $role = $validiteToken['function'] ?? null;
+
+                            // Liste des rôles autorisés à accéder à l'API (à adapter selon tes besoins)
+                            $rolesAutorises = ['infirmiere', 'infirmiere_cheffe', 'patient', 'administrateur'];
+
+                            if (!in_array($role, $rolesAutorises)) {
+                                throw new HttpUnauthorizedException($request, 'Accès refusé');
+                            }
+                            else
+                            {
+                                $request = $request->withAttribute('token', $validiteToken);
+                            }
                         }
                     }
                 }
