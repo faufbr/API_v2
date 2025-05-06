@@ -19,16 +19,29 @@ Si vous avez déjà installé les dépendances, rendez-vous à la section du [d�
 
 `php -S localhost:8080 C:\wamp64\www\API_v2\public\index.php`
 
+## Tests
+
 ### Installer httpie (premiers tests/tests légers)
 
 Si vous voulez effectuer quelques premiers tests sans Postman, vous pouvez utiliser httpie :
 
 `python -m pip install --upgrade pip wheel`
+
 `python -m pip install httpie`
 
-### Utiliser httpie
+#### Utiliser httpie
 
 `http get(put, delete...) http://localhost:8080/(table, paramètres...)`
+
+### Installer PHPUnit
+
+`composer require --dev phpunit/phpunit`
+
+#### Lancer les tests PHPUnit
+
+Tester toutes les méthodes de test : `vendor\bin\phpunit`
+
+Tester une méthode seulement (exemple) : `vendor\bin\phpunit --filter testMiddlewareTokenValide`
 
 ## Comment utiliser cette API ?
 
