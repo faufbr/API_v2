@@ -28,7 +28,12 @@ class GetTable
         }
 
         $token = $request->getAttribute('token');
-        $role = $token['function'] ?? 'patient';
+        $userRole = $token['function'] ?? 'patient';
+
+        error_log("Rôle extrait de la requête : " . $userRole);
+        if (empty($userRole)) {
+            throw new \Slim\Exception\HttpUnauthorizedException($request, 'Token manquant ou non valide');
+        }
 
         $acces = [
             'administrateur' => [
@@ -52,9 +57,6 @@ class GetTable
                 'visite',
             ],
             'infirmiere' => [
-                'soins',
-                'soins_visite',
-                'categ_soins',
                 'patient',
                 'visite'
             ],
@@ -77,13 +79,15 @@ class GetTable
         ];
 
         // Attribution de l'accès aux tables en fonction du rôle. S'il y a un rôle qui n'est pas défini dans ACCES, on ne lui donne aucune table à accéder
-        $tablesAutorisees = $acces[$role] ?? [];
+        $tablesAutorisees = $acces[$userRole] ?? [];
 
         $context = RouteContext::fromRequest($request);
 
         $route = $context->getRoute();
 
         $table = $route->getArgument('table');
+
+        error_log("Rôle : $userRole, Table : $table, Tables autorisées : " . implode(', ', $tablesAutorisees));
 
         // Pour éviter les accès non autorisés
         if (!in_array($table, $tablesAutorisees)) {
@@ -96,7 +100,11 @@ class GetTable
 
             if ($id != null)
             {
-                $obj = $this->repository->getById((int) $id, $table);
+                $userId = $request->getAttribute('token')['id'] ?? null;
+                $userRole = $request->getAttribute('token')['function'] ?? null;
+
+                $obj = $this->repository->getById((int) $id, $table, $userId, $userRole);
+
                 if ($obj === false) {
                     throw new HttpNotFoundException($request, message: 'Element ' . $table . ' introuvable.');
                 }

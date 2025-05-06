@@ -10,7 +10,7 @@ $app->get('/{table}', function (Request $request, Response $response, string $ta
     //Récupère le repository via le container DI
     $repository = $this->get(App\Repositories\TableRepository::class);
 
-    $data = $repository->getAll($table);
+    $data = $repository->getAll($table, $request->getAttribute('user_id'), $request->getAttribute('user_role'));
 
     $tableJson = json_encode($data);
     
@@ -112,15 +112,14 @@ $app->post('/login', function (Request $request, Response $response) {
         $repository = $this->get(App\Repositories\TableRepository::class);
 
         try {
-            $user = $repository->login($params);
+            $result = $repository->login($params);
             
-            if ($user === false) {
-                $msgErreur = json_encode(["erreur" => "Login ou mot de passe incorrect"]);
-                $response->getBody()->write($msgErreur);
+            if (isset($result['error'])) {
+                $response->getBody()->write(json_encode($result));
                 $vreponse = $response->withStatus(401);
             }
             else {
-                $response->getBody()->write(json_encode($user));
+                $response->getBody()->write(json_encode($result));
                 $vreponse = $response->withStatus(200);
             }
         }

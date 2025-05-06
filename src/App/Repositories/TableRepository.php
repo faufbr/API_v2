@@ -13,24 +13,87 @@ class TableRepository
     {
 
     }
-    public function getAll($table): array 
+    public function getAll(string $table, ?int $userId, ?string $userRole): array 
     {
         $pdo = $this->database->getConnection();
 
-        $req = $pdo->query('SELECT * FROM ' . $table);
+        $sql = "SELECT * FROM $table";
+        $params = [];
+
+        switch ($userRole) {
+            case 'patient':
+                switch ($table) {
+                    case 'patient':
+                        $sql .= " WHERE id = :user_id";
+                        $params[':user_id'] = $userId;
+                        break;
+                    case 'visite':
+                        $sql .= " WHERE patient = :user_id";
+                        $params[':user_id'] = $userId;
+                        break;
+                }
+                break;
+            case 'infirmiere':
+                switch ($table) {
+                    case 'patient':
+                        $sql .= " WHERE infirmiere_souhait = :user_id";
+                        $params[':user_id'] = $userId;
+                        break;
+                    case 'visite':
+                        $sql .= " WHERE infirmiere = :user_id";
+                        $params[':user_id'] = $userId;
+                        break;
+                }
+                break;
+        }
+
+        $req = $pdo->prepare($sql);
+
+        error_log("SQL exécutée : $sql");
+        error_log("Paramètres : " . print_r($params, true));
+
+
+        $req->execute($params);
 
         return $req->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getById(int $id, $table): array|bool 
+    public function getById(int $id, string $table, ?int $userId, ?string $userRole): array|bool 
     {
         $sql = "SELECT * FROM $table WHERE id = :id";
+
+        switch ($userRole) {
+            case 'patient':
+                switch ($table) {
+                    case 'patient':
+                        $sql .= " AND id = :user_id";
+                        break;
+                    case 'visite':
+                        $sql .= " AND patient = :user_id";
+                        break;
+                }
+                break;
+            case 'infirmiere':
+                switch ($table) {
+                    case 'patient':
+                        $sql .= " AND infirmiere_souhait = :user_id";
+                        break;
+                    case 'visite':
+                        $sql .= " AND infirmiere = :user_id";
+                        break;
+                }
+                break;
+        }
 
         $pdo = $this->database->getConnection();
 
         $req = $pdo->prepare($sql);
 
         $req->bindValue(':id', $id, PDO::PARAM_INT);
+
+        if ($userRole) {
+            $req->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        }
 
         $req->execute();
 
@@ -134,9 +197,9 @@ class TableRepository
 
                 $req->execute();
 
-                $this->createToken($user['id']);
+                $token = $this->createToken($user['id']);
                 
-                $vretour = $user;
+                $vretour = ['user' => $user, 'token' => $token];
             }
             else {
                 if ($user['nb_tentative_erreur'] >= 3) {
@@ -163,19 +226,7 @@ class TableRepository
 
     public function createToken(int $idLogin) 
     {
-        // Rôle par défaut pour être + sécurisé
-        $role = 'patient';
-        if ($this->checkCheffe($idLogin))
-        {
-            $role = 'infirmiere_cheffe';
-        }
-        else 
-        {
-            if ($this->checkInfirmiere($idLogin))
-            {
-                $role = 'infirmiere';
-            }
-        }
+        $role = $this->getRole($idLogin);
 
         $header = base64_encode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
         $payload = base64_encode(json_encode(['id' => $idLogin, 'function' => $role, 'exp' => (time() + 60)]));
@@ -193,9 +244,30 @@ class TableRepository
 
         $req->execute();
 
-        $retourToken = $req->fetch(PDO::FETCH_ASSOC);
+        return $token;
+    }
 
-        return $retourToken;
+    public function getRole(int $id)
+    {
+        // Rôle par défaut pour être + sécurisé
+        $role = 'patient';
+        if ($this->checkCheffe($id))
+        {
+            $role = 'infirmiere_cheffe';
+        }
+        else 
+        {
+            if ($this->checkInfirmiere($id))
+            {
+                $role = 'infirmiere';
+            }
+            elseif ($this->checkAdmin($id))
+            {
+                $role = 'administrateur';
+            }
+        }
+
+        return $role;
     }
 
     public function verifyToken(string $jwt)
@@ -223,6 +295,7 @@ class TableRepository
             $vretour = false;
         }
 
+        error_log("Payload déchiffré : " . print_r($payloadDechiffre, true));
         return $vretour;
     }
 
@@ -256,5 +329,35 @@ class TableRepository
         $req->execute();
 
         return $req->rowCount() > 0;
+    }
+
+    public function checkAdmin(int $id): bool
+    {
+        $sql = "SELECT id FROM administrateur WHERE id = :id";
+
+        $pdo = $this->database->getConnection();
+
+        $req = $pdo->prepare($sql);
+
+        $req->bindValue(':id', $id, PDO::PARAM_INT);
+
+        $req->execute();
+
+        return $req->rowCount() > 0;
+    }
+
+    public function getUserById(int $id): ?array
+    {
+        $sql = "SELECT id, nom, prenom FROM personne WHERE id = :id";
+
+        $pdo = $this->database->getConnection();
+
+        $req = $pdo->prepare($sql);
+        $req->bindValue(':id', $id, PDO::PARAM_INT);
+        $req->execute();
+
+        $user = $req->fetch(PDO::FETCH_ASSOC);
+
+        return $user ?: null;
     }
 }

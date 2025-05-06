@@ -28,6 +28,7 @@ class VerifyTokenMiddleware
         }
         else {
             $authorization = $request->getHeader('Authorization');
+            error_log("Authorization Header : " . print_r($authorization, true));
 
             // Vérifie si la chaîne commence par Bearer puis une suite de caractères non blancs
             if (!$authorization || !preg_match('/Bearer\s(\S+)/', $authorization[0], $matches)) {
@@ -43,14 +44,29 @@ class VerifyTokenMiddleware
                     }
                     else {
                         $validiteToken = $this->repository->verifyToken($jwt);
+                        error_log("JWT extrait : " . $jwt);
+                        error_log("Validité du token : " . print_r($validiteToken, true));
 
                         if ($validiteToken == false) {
+                            error_log("Token absent ou expiré !");
                             throw new HttpUnauthorizedException($request, 'Token invalide');
                         }
                         else {
-                            $role = $validiteToken['function'] ?? null;
 
-                            // Liste des rôles autorisés à accéder à l'API (à adapter selon tes besoins)
+                            $userId = $validiteToken['id'] ?? null;
+                            error_log("user id : " . $userId);
+                            if (!$userId) {
+                                throw new HttpUnauthorizedException($request, 'ID utilisateur manquant dans le token');
+                            }
+
+                            // Récupère les infos user
+                            $user = $this->repository->getUserById($userId);
+                            if (!$user) {
+                                throw new HttpUnauthorizedException($request, 'Utilisateur introuvable');
+                            }
+                            $role = $this->repository->getRole($userId);
+                            error_log($role);
+
                             $rolesAutorises = ['infirmiere', 'infirmiere_cheffe', 'patient', 'administrateur'];
 
                             if (!in_array($role, $rolesAutorises)) {
@@ -58,7 +74,11 @@ class VerifyTokenMiddleware
                             }
                             else
                             {
-                                $request = $request->withAttribute('token', $validiteToken);
+                                error_log("Token validé, rôle injecté : " . $role);
+                                $request = $request->withAttribute('token', $validiteToken)
+                                ->withAttribute('user_id', $validiteToken['id'])
+                                ->withAttribute('user_role', $role);
+                                error_log("Attributs injectés : user_id = " . $validiteToken['id'] . ", user_role = " . $role);
                             }
                         }
                     }
@@ -68,6 +88,8 @@ class VerifyTokenMiddleware
                     throw new HttpUnauthorizedException($request, 'Token invalide : ' . $ex->getMessage());
                 }
             }
+            error_log("Token injecté dans la requête : " . print_r($validiteToken, true));
+
             return $handler->handle($request);
         }
     }
